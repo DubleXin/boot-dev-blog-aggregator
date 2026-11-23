@@ -1,34 +1,70 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"os"
+
 	"github.com/DubleXin/aggregator/internal/config"
+	"github.com/DubleXin/aggregator/internal/database"
+	_ "github.com/lib/pq"
 )
 
+type state struct {
+	cfg *config.Config
+	db  *database.Queries
+}
+
+func checkErr(e error) {
+	if e != nil {
+		println("Error, ocured:\n\t", e.Error())
+		os.Exit(1)
+	}
+}
+
 func main() {
-	fmt.Println("Reading cofig...")
+	config, err := config.ReadConfig()
+	checkErr(err)
 
-	cfg, err := config.ReadConfig()
-	if err != nil {
-		fmt.Println("Error, ocured:\n\t", err.Error())
+	s := state{
+		cfg: config,
 	}
-	fmt.Println("Current config:")
-	fmt.Println(cfg.DBUrl)
-	fmt.Println(cfg.CurrentUser)
-	user := "Rundom_user_nAme1234"
-	fmt.Println("Writing", user, "to config...")
-	err = cfg.SetUser(user)
-	if err != nil {
-		fmt.Println("Error, ocured:\n\t", err.Error())
+	cmds := commands{
+		list: map[string]func(*state, command) error{},
 	}
 
-	fmt.Println("Reading cofig...")
+	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
+	cmds.register("reset", handlerResetUsers)
+	cmds.register("users", handlerGetUsers)
 
-	cfg, err = config.ReadConfig()
-	if err != nil {
-		fmt.Println("Error, ocured:\n\t", err.Error())
+	db, err := sql.Open("postgres", config.DBUrl)
+	checkErr(err)
+	s.db = database.New(db)
+
+	cmd, err := readInput()
+	checkErr(err)
+
+	err = cmds.run(&s, cmd)
+	checkErr(err)
+
+}
+
+func readInput() (command, error) {
+	args := os.Args
+
+	if len(args) < 2 {
+		return command{}, fmt.Errorf("Failed to read command from args, expected non zero args length, but got:\n\t\t%v", args)
 	}
-	fmt.Println("Current config:")
-	fmt.Println(cfg.DBUrl)
-	fmt.Println(cfg.CurrentUser)
+
+	if len(args) == 2 {
+		return command{
+			name: args[1],
+			args: []string{},
+		}, nil
+	}
+	return command{
+		name: args[1],
+		args: args[2:],
+	}, nil
 }
