@@ -79,7 +79,7 @@ func handlerResetUsers(s *state, cmd command) error {
 func getUsers(s *state) ([]string, error) {
 	users, err := s.db.GetUsers(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch users: %w", err)
+		return nil, fmt.Errorf("Failed to fetch users: %w", err)
 	}
 	return users, nil
 }
