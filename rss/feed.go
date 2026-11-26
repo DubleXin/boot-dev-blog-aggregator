@@ -1,6 +1,9 @@
 package rss
 
-import "html"
+import (
+	"fmt"
+	"html"
+)
 
 type RSSFeed struct {
 	Channel struct {
@@ -32,5 +35,25 @@ func (r *RSSFeed) unescapeSelf() {
 		if item.Description != "" {
 			item.Description = html.UnescapeString(item.Description)
 		}
+	}
+}
+
+func (feed *RSSFeed) Print() {
+	if feed == nil {
+		fmt.Println("RSS feed is empty.")
+		return
+	}
+
+	fmt.Printf("Title: %s\n", feed.Channel.Title)
+	fmt.Printf("Link: %s\n", feed.Channel.Link)
+	fmt.Printf("Description: %s\n", feed.Channel.Description)
+	fmt.Printf("Items: %d\n", len(feed.Channel.Item))
+
+	for i, item := range feed.Channel.Item {
+		fmt.Printf("\n--- Item %d ---\n", i+1)
+		fmt.Printf("Title: %s\n", item.Title)
+		fmt.Printf("Link: %s\n", item.Link)
+		fmt.Printf("Description: %s\n", item.Description)
+		fmt.Printf("Published: %s\n", item.PubDate)
 	}
 }
